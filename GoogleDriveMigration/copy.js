@@ -117,7 +117,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             var fileParent = getLastParent(file);
             if (!!fileParent) {
                 var fileParentPath = getFileOrFolderPath(file);
-                LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['NEWPATHTEMP']) + (i + 2) )
+                LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['NEWPATH']) + (i + 2) )
                     .setFormula('=HYPERLINK("' + fileParent.getUrl() + '", "' + fileParentPath + '")');
             }
         }
@@ -273,7 +273,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         }
         //setFilePermissions(f, f1);
         logDebug([accessType, permissionType, status], 12);
-        return { message: status.join('; '), status: true, fileId: f1.getId(), file: f1 };
+        return { message: 'copied' + (status.length ? ': ' + status.join('; ') : ''), status: true, fileId: f1.getId(), file: f1 };
     }
 
     function setFilePermissions(f, f1) {
@@ -456,11 +456,11 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 var destinationFile = fileNamesAtDestination[file.getName()];
                 if (!!destinationFile) {
                     // DUPLICATE, log it
-                    updateMoveToFinalStatus({status: false, message: 'duplicate file'}, file, null, destinationFile);
+                    updateMoveToFinalStatus({status: false, message: 'existing file'}, file, null, destinationFile);
                 } else {
                     var newParent = destinationRoot.addFile(file);
                     var oldParent = sourceRoot.removeFile(file);
-                    var status = {status: true, message: ''};
+                    var status = {status: true, message: 'copied+moved'};
                     if (newParent.getId() != destinationRoot.getId() || oldParent.getId() != sourceRoot.getId()) {
                         status.status = false;
                         if (newParent.getId() != destinationRoot.getId()) {
