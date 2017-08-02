@@ -1,13 +1,20 @@
 /**
- * Created by ivanvelev on 7/26/17.
+ * Created by ivanvelev (vanecat@gmail.com) on 7/26/17
+ * This script is governed by Creative Commons License Attribution-ShareAlike (CC BY-SA)
+ *   This license lets others remix, tweak, and build upon this code-base even for commercial purposes,
+ *   as long as they credit the developer (Ivan Velev) and license their new creations under the identical
+ *   terms. This license is often compared to “copyleft” free and open source software licenses. All new
+ *   works based on yours will carry the same license, so any derivatives will also allow commercial use.
+ * Summary of permissions of the CC BY-SA license : https://creativecommons.org/licenses/by-sa/4.0/
+ * Full legal text of the CC BY-SA license: https://creativecommons.org/licenses/by-sa/4.0/legalcode
  */
 
-
-function CopyIvansTestFiles_Priority_1_and_2() {
+// -----------------------  HYPHAE FILES --------------------------
+function Copy_Folder_X__Priority_1_and_2() {
     var props = {
-        log: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
-        temp: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
-        final: '0B7kqBR5fP2nJYzU1QnU2aE90U2M',
+        spreadsheet: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
+        tempRootFolder: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
+        finalRootFolder: '0B7kqBR5fP2nJYzU1QnU2aE90U2M',
         priority: [1,2]
     };
 
@@ -15,6 +22,20 @@ function CopyIvansTestFiles_Priority_1_and_2() {
     new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).copyToTemp();
 }
 
+function Move_Folder_X__Priority_1_and_2() {
+    var props = {
+        spreadsheet: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
+        tempRootFolder: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
+        finalRootFolder: '0B7kqBR5fP2nJYzU1QnU2aE90U2M',
+        priority: [1,2]
+    };
+
+
+    new HyphaeDriveFiles(props.spreadsheet, props.tempRootFolder, props.finalRootFolder, props.priority).moveFromTempToFinal();
+}
+
+
+// -----------------------  IVAN TESTING  --------------------------
 function MoveIvansTestFiles_Priority_1_and_2() {
     var props = {
         log: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
