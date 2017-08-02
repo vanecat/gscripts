@@ -91,7 +91,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 'newId': values[i][LOG_SHEET_FIELDS['NEWDOCID']],
                 'destinationPath': values[i][LOG_SHEET_FIELDS['PATHDESTINATION']],
                 'priority' : values[i][LOG_SHEET_FIELDS['PRIORITY']],
-                'index': i
+                'index': i + 1 // the real-absolute 1-based index (accounting for a header column)
             });
         }
 
@@ -518,7 +518,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         var fileParent = file.getParents().next();
         if (!!fileParent) {
             var fileParentPath = getFileOrFolderPath(file);
-            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['NEWPATH']) + (logIndex + 2) )
+            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['NEWPATH']) + (logIndex) )
                 .setFormula('=HYPERLINK("' + fileParent.getUrl() + '", "' + fileParentPath + '")');
         }
 
