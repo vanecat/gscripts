@@ -39,7 +39,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             copyToTemp();
             mailLog('copy to temporary', true);
         } catch (e) {
-            Logger.log(e.message);
+            logError(e.message + ' (line:'+e.lineNumber+')');
             mailLog('copy to temporary (ERROR)', true);
         }
     };
@@ -72,7 +72,8 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
     function scanSpreadsheet() {
         initLogSpreadsheet();
-        //Logger.log([sheetFieldsCount, LOG_SHEET_FIELDS]);
+
+        logDebug(LOG_SHEET_FIELDS, 12);
         var values = LOG_SHEET.getSheetValues(1, 1, 100, LOG_SHEET_FIELDS_COUNT);
 
         var fileInfo = [];
@@ -94,7 +95,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             });
         }
 
-        //Logger.log(fileInfo);
+        logDebug(fileInfo, 12);
         return fileInfo;
     }
 
@@ -125,17 +126,17 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     function initLogSpreadsheet() {
         LOG_FILE = DriveApp.getFileById(masterSpreadsheetId);
         if (!LOG_FILE) {
-            Logger.log('no log file found');
+            logError('no log file found');
             return;
         } else {
             var spreadsheet = SpreadsheetApp.open(LOG_FILE);
             if (!spreadsheet) {
-                Logger.log('cant open spreadsheet ' + LOG_FILE.getName());
+                logError('cant open spreadsheet ' + LOG_FILE.getName());
                 return;
             }
             var sheet = spreadsheet.getSheets()[0];
             if (!sheet) {
-                Logger.log('cant open the 2nd LOG_SHEET of the spreadsheet ' + LOG_FILE.getName());
+                logError('cant open the 2nd LOG_SHEET of the spreadsheet ' + LOG_FILE.getName());
                 return;
             }
             LOG_SHEET = sheet;
@@ -174,7 +175,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                     currentFolder = currentFolder.createFolder(folderName);
                 } catch(e) {
                     var errorMessage = 'tmp parent folder ('+folderName+') cannot be created: '+e.message;
-                    Logger.log(errorMessage);
+                    logError(errorMessage);
                     return { status : false, message: errorMessage };
                 }
 
@@ -188,12 +189,12 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         try {
             f = DriveApp.getFileById(fileId);
         } catch (e) {
-            Logger.log('file NOT found: ' + fileId);
+            logError('file NOT found: ' + fileId);
             return { message: e.message, status: false };
         }
 
         if (!f) {
-            Logger.log('file found but NOT open:' + id);
+            logError('file found but NOT open:' + id);
             return { message: 'file not found', status: false };
         }
 
@@ -271,7 +272,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             return { message: 'file not copied: '+e.message, status: false };
         }
         //setFilePermissions(f, f1);
-        Logger.log([accessType, permissionType, status]);
+        logDebug([accessType, permissionType, status], 12);
         return { message: status.join('; '), status: true, fileId: f1.getId(), file: f1 };
     }
 
@@ -394,7 +395,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         }
 
 
-        Logger.log([name, isTrashed, size, url, fid, sharingPermission, sharingAccess, owner, ownerEmail, viewersString, editorsString, parents, parentsString]);
+        logDebug([name, isTrashed, size, url, fid, sharingPermission, sharingAccess, owner, ownerEmail, viewersString, editorsString, parents, parentsString], 12);
     }
 
 
@@ -403,7 +404,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             moveFromTempToFinal();
             mailLog('move from temporary to final', true);
         } catch (e) {
-            Logger.log(e.message);
+            logError(e.message + ' (line:'+e.lineNumber+')');
             mailLog('move from temporary to final (ERROR)', true);
         }
     };
@@ -424,7 +425,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
 
         if (!sourceRoot || !destinationRoot) {
-            Logger.log('no root or destination folder');
+            logError('no root or destination folder');
             return;
         }
         var files = sourceRoot.getFiles();
@@ -459,19 +460,17 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 } else {
                     var newParent = destinationRoot.addFile(file);
                     var oldParent = sourceRoot.removeFile(file);
-                    var status = '';
-                    if (newParent.getId() == destinationRoot.getId() && oldParent.getId() == sourceRoot.getId()) {
-                        status = {status: true};
-                    } else {
-                        status = '';
+                    var status = {status: true, message: ''};
+                    if (newParent.getId() != destinationRoot.getId() || oldParent.getId() != sourceRoot.getId()) {
+                        status.status = false;
                         if (newParent.getId() != destinationRoot.getId()) {
-                            status += 'cannot add file to destination folder; ';
+                            status.message += 'cannot add file to destination folder; ';
                         }
                         if (oldParent.getId() != sourceRoot.getId()) {
-                            status += 'cannot remove file from source folder';
+                            status.message += 'cannot remove file from source folder';
                         }
                     }
-                    updateMoveToFinalStatus({status: false, message: status}, file);
+                    updateMoveToFinalStatus(status, file);
                 }
             }
         }
@@ -483,7 +482,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                     destinationFolder = destinationRoot.createFolder(folder.getName());
                     //updateMoveToFinalStatus('new folder (did not exist in destination)', newFolder);
                 }
-                that.moveFromTempToFinal(folder, destinationFolder);
+                moveFromTempToFinal(folder, destinationFolder);
                 if (!folder.getFiles().hasNext() && !folder.getFolders().hasNext()) {
                     sourceRoot.removeFolder(folder);
                 }
@@ -495,24 +494,26 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     var LOG_INDEX_BY_NEW_IDS = null;
     function getIndexOfFileByNewId (file) {
         if (!LOG_INDEX_BY_NEW_IDS) {
+            LOG_INDEX_BY_NEW_IDS = {};
             var filesInfo = scanSpreadsheet();
             for (var i = 0; i < filesInfo.length; i++) {
                 var f = filesInfo[i];
                 LOG_INDEX_BY_NEW_IDS[f.newId] = f;
             }
         }
-        return LOG_INDEX_BY_NEW_IDS[file.getId()].i;
+        logDebug([LOG_INDEX_BY_NEW_IDS, file, file.getId()], 12);
+        return LOG_INDEX_BY_NEW_IDS[file.getId()].index;
     }
 
     function updateMoveToFinalStatus(status, file, dupFile) {
-        var logIndex = getIndexOfFileByNewId();
+        var logIndex = getIndexOfFileByNewId(file);
 
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COMPLETE']) + logIndex )
+        logDebug([LOG_SHEET_FIELDS, getColumnLetter(LOG_SHEET_FIELDS['COMPLETED']) + logIndex], 12);
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COMPLETED']) + logIndex )
             .setValue(status.status);
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + logIndex )
             .setValue(status.message);
-
 
         if (!!dupFile) {
             LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LINKDUP']) + logIndex )
@@ -526,8 +527,6 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             }
 
         }
-
-        LOG_INDEX++;
     }
 
     function getFileOrFolderPath(file) {
@@ -539,6 +538,19 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         } else {
             return '';
         }
+    }
+
+    function logDebug(stuff, debugId) {
+        var debugOnlyIds = [];
+        var c = '|';
+        // if the debug id is contained in the ids array, then add the debug
+        if ((c+debugOnlyIds.join(c)+c).indexOf(c+debugId+c) >= 0) {
+            Logger.log(stuff);
+        }
+    }
+
+    function logError(stuff) {
+        Logger.log(stuff);
     }
 
     function mailLog(subject, shouldClearLog) {
