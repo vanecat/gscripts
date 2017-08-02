@@ -515,14 +515,21 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + logIndex )
             .setValue(status.message);
 
+        var fileParent = file.getParents().next();
+        if (!!fileParent) {
+            var fileParentPath = getFileOrFolderPath(file);
+            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['NEWPATH']) + (logIndex + 2) )
+                .setFormula('=HYPERLINK("' + fileParent.getUrl() + '", "' + fileParentPath + '")');
+        }
+
         if (!!dupFile) {
-            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LINKDUP']) + logIndex )
+            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['EXISTINGURL']) + logIndex )
                 .setFormula('=HYPERLINK("' + dupFile.getUrl() + '", "' + dupFile.getName() + '")');
 
             var dupFileParent = dupFile.getParents().next();
-            var dupFileParentPath = getFileOrFolderPath(dupFile);
             if (!!dupFileParent) {
-                LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['PATHDUP']) + logIndex)
+                var dupFileParentPath = getFileOrFolderPath(dupFile);
+                LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['EXISTINGPATH']) + logIndex)
                     .setFormula('=HYPERLINK("' + dupFileParent.getUrl() + '", "' + dupFileParentPath + '")');
             }
 
