@@ -114,7 +114,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['NEWURL']) + (i + 2))
                 .setFormula('=HYPERLINK("'+file.getUrl()+'","'+file.getName()+'")');
 
-            var fileParent = file.getParents().next();
+            var fileParent = getLastParent(file);
             if (!!fileParent) {
                 var fileParentPath = getFileOrFolderPath(file);
                 LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['NEWPATHTEMP']) + (i + 2) )
@@ -456,7 +456,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 var destinationFile = fileNamesAtDestination[file.getName()];
                 if (!!destinationFile) {
                     // DUPLICATE, log it
-                    updateMoveToFinalStatus({status: false, message: 'duplicate file'}, destinationFile, file);
+                    updateMoveToFinalStatus({status: false, message: 'duplicate file'}, file, null, destinationFile);
                 } else {
                     var newParent = destinationRoot.addFile(file);
                     var oldParent = sourceRoot.removeFile(file);
@@ -470,7 +470,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                             status.message += 'cannot remove file from source folder';
                         }
                     }
-                    updateMoveToFinalStatus(status, file);
+                    updateMoveToFinalStatus(status, file, newParent);
                 }
             }
         }
@@ -485,11 +485,12 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 moveFromTempToFinal(folder, destinationFolder);
                 if (!folder.getFiles().hasNext() && !folder.getFolders().hasNext()) {
                     sourceRoot.removeFolder(folder);
+                    folder.setTrashed(true);
                 }
             }
         }
 
-    };
+    }
 
     var LOG_INDEX_BY_NEW_IDS = null;
     function getIndexOfFileByNewId (file) {
@@ -505,7 +506,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         return LOG_INDEX_BY_NEW_IDS[file.getId()].index;
     }
 
-    function updateMoveToFinalStatus(status, file, dupFile) {
+    function updateMoveToFinalStatus(status, file, fileParent, dupFile) {
         var logIndex = getIndexOfFileByNewId(file);
 
         logDebug([LOG_SHEET_FIELDS, getColumnLetter(LOG_SHEET_FIELDS['COMPLETED']) + logIndex], 12);
@@ -515,9 +516,11 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + logIndex )
             .setValue(status.message);
 
-        var fileParent = file.getParents().next();
+        if (!fileParent) {
+            fileParent = getLastParent(file);
+        }
         if (!!fileParent) {
-            var fileParentPath = getFileOrFolderPath(file);
+            var fileParentPath = getFolderPathWithFolderNameItself(fileParent);
             LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['NEWPATH']) + (logIndex) )
                 .setFormula('=HYPERLINK("' + fileParent.getUrl() + '", "' + fileParentPath + '")');
         }
@@ -526,7 +529,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['EXISTINGURL']) + logIndex )
                 .setFormula('=HYPERLINK("' + dupFile.getUrl() + '", "' + dupFile.getName() + '")');
 
-            var dupFileParent = dupFile.getParents().next();
+            var dupFileParent = getLastParent(dupFile);
             if (!!dupFileParent) {
                 var dupFileParentPath = getFileOrFolderPath(dupFile);
                 LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['EXISTINGPATH']) + logIndex)
@@ -536,15 +539,25 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         }
     }
 
-    function getFileOrFolderPath(file) {
+    function getLastParent(file) {
         var parents = file.getParents();
-        if (parents.hasNext()) {
-            var p = parents.next();
-            var path = getFileOrFolderPath(p);
-            return path + '/' + p.getName();
+        var lastParent = null;
+        // get last parent
+        while(parents.hasNext()) {
+            lastParent = parents.next();
+        }
+        return lastParent;
+    }
+    function getFileOrFolderPath(file) {
+        var parent = getLastParent(file);
+        if (!!parent) {
+            return getFileOrFolderPath(parent) + '/' + parent.getName();
         } else {
             return '';
         }
+    }
+    function getFolderPathWithFolderNameItself(folder) {
+        return getFileOrFolderPath(folder) + '/' + folder.getName();
     }
 
     function logDebug(stuff, debugId) {
