@@ -15,6 +15,19 @@ function CopyIvansTestFiles_Priority_1_and_2() {
     new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).copyToTemp();
 }
 
+function MoveIvansTestFiles_Priority_1_and_2() {
+    var props = {
+        log: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
+        temp: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
+        final: '0B7kqBR5fP2nJYzU1QnU2aE90U2M',
+        priority: [1,2]
+    };
+
+
+    new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).moveFromTempToFinal();
+}
+
+
 
 function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolderId, prioritiesToCopy) {
     var LOG_SHEET, LOG_SHEET_FIELDS = {};
@@ -55,7 +68,6 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 updateMoveToTempStatus(i, status);
             }
         }
-        tempTemp.setTrashed(true);
     }
 
     function scanSpreadsheet() {
