@@ -218,9 +218,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         var viewersEmails = [];
         try {
             viewers = f.getViewers();
-            for (var j = 0; j < viewers.length; j++)
+            for (var j = 0; j < viewers.length; j++) {
                 viewersEmails.push(viewers[j].getEmail());
-            status.push('viewers: ' + viewersEmails);
+            }
         } catch (e) {
             status.push('cant see viewers');
         }
@@ -230,9 +230,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         var editorsEmails = [ownerEmail];
         try {
             editors = f.getEditors();
-            for (var j = 0; j < editors.length; j++)
+            for (var j = 0; j < editors.length; j++) {
                 editorsEmails.push(editors[j].getEmail());
-            status.push('editors:' + editorsEmails);
+            }
         } catch (e) {
             status.push('cant see editors');
         }
@@ -247,7 +247,6 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                     parentsString += p.getName() + "\\";
                 }
             }
-            status.push('parents: ' + parentsString);
         } catch (e) {
             status.push('cant see parents');
         }
