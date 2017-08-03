@@ -9,29 +9,16 @@
  * Full legal text of the CC BY-SA license: https://creativecommons.org/licenses/by-sa/4.0/legalcode
  */
 
-// -----------------------  HYPHAE FILES --------------------------
-function Copy_Folder_X__Priority_1_and_2() {
+// -----------------------  IVAN TESTING  --------------------------
+function CopyIvansTestFiles_Priority_1_and_2() {
     var props = {
-        spreadsheet: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
-        tempRootFolder: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
-        finalRootFolder: '0B7kqBR5fP2nJYzU1QnU2aE90U2M',
+        log: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
+        temp: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
+        final: '',
         priority: [1,2]
     };
-
 
     new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).copyToTemp();
-}
-
-function Move_Folder_X__Priority_1_and_2() {
-    var props = {
-        spreadsheet: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
-        tempRootFolder: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
-        finalRootFolder: '0B7kqBR5fP2nJYzU1QnU2aE90U2M',
-        priority: [1,2]
-    };
-
-
-    new HyphaeDriveFiles(props.spreadsheet, props.tempRootFolder, props.finalRootFolder, props.priority).moveFromTempToFinal();
 }
 
 
@@ -40,15 +27,12 @@ function MoveIvansTestFiles_Priority_1_and_2() {
     var props = {
         log: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
         temp: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
-        final: '0B7kqBR5fP2nJYzU1QnU2aE90U2M',
+        final: '',
         priority: [1,2]
     };
 
-
     new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).moveFromTempToFinal();
 }
-
-
 
 function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolderId, prioritiesToCopy) {
     var LOG_SHEET, LOG_SHEET_FIELDS = {};
@@ -67,6 +51,12 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
     function copyToTemp () {
         var destinationRoot = DriveApp.getFolderById(tempRootFolderId);
+
+        if (!destinationRoot) {
+            logError('no destination root folder');
+            return;
+        }
+
         var fileInfo = scanSpreadsheet();
 
         for(var i=0; i<fileInfo.length; i++) {
@@ -439,16 +429,30 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         }
 
         if (!destinationRootOrNull) {
-            destinationRoot = DriveApp.getFolderById(finalRootFolderId);
+            if (!finalRootFolderId) {
+                try {
+                    destinationRoot = DriveApp.getRootFolder();
+                } catch(e) {
+                    logError('cant access MyDrive: ' + e.message + ' (line:'+e.lineNumber+')');
+                }
+            } else {
+                destinationRoot = DriveApp.getFolderById(finalRootFolderId);
+            }
         } else {
             destinationRoot = destinationRootOrNull;
         }
 
 
-        if (!sourceRoot || !destinationRoot) {
-            logError('no root or destination folder');
+        if (!sourceRoot) {
+            logError('no source root folder');
             return;
         }
+
+        if (!destinationRoot) {
+            logError('no destination root folder');
+            return;
+        }
+
         var files = sourceRoot.getFiles();
         var folders = sourceRoot.getFolders();
 
