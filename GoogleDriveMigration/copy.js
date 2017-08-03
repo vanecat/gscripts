@@ -616,7 +616,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             logError('cant open spreadsheet ' + LOG_FILE.getName());
             return;
         }
-        var sheet = spreadsheet.getSheets()[1];
+        var sheet = spreadsheet.getSheetByName('console log');
         if (!sheet) {
             return false;
         }
