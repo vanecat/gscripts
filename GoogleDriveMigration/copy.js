@@ -42,10 +42,10 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     this.copyToTemp = function() {
         try {
             copyToTemp();
-            mailLog('copy to temporary', true);
+            recordLog('copy to temporary', true);
         } catch (e) {
             logError(e.message + ' (line:'+e.lineNumber+')');
-            mailLog('copy to temporary (ERROR)', true);
+            recordLog('copy to temporary (ERROR)', true);
         }
     };
 
@@ -147,7 +147,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             }
             var sheet = spreadsheet.getSheets()[0];
             if (!sheet) {
-                logError('cant open the 2nd LOG_SHEET of the spreadsheet ' + LOG_FILE.getName());
+                logError('cant open the 1st of the spreadsheet ' + LOG_FILE.getName());
                 return;
             }
             LOG_SHEET = sheet;
@@ -275,16 +275,24 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             status.push('cant see parents');
         }
 
+        logDebug([accessType, permissionType, status], 12);
 
         var f1;
         try {
-            f1 = f.makeCopy(f.getName(), folderStatus.folder);
+            var folder = folderStatus.folder;
+            var fExistingIter = folder.getFilesByName(f.getName());
+            logDebug('dup file in temp folder? ' + fExistingIter.hasNext(), 12);
+            if (!fExistingIter.hasNext()) {
+                f1 = f.makeCopy(f.getName(), folder);
+                //setFilePermissions(f, f1);
+                return { message: 'copied' + (status.length ? ': ' + status.join('; ') : ''), status: true, fileId: f1.getId(), file: f1 };
+            } else {
+                var fExisting = fExistingIter.next();
+                return { message: 'already copied' + (status.length ? ': ' + status.join('; ') : ''), status: true, fileId: fExisting.getId(), file: fExisting };
+            }
         } catch (e) {
             return { message: 'file not copied: '+e.message, status: false };
         }
-        //setFilePermissions(f, f1);
-        logDebug([accessType, permissionType, status], 12);
-        return { message: 'copied' + (status.length ? ': ' + status.join('; ') : ''), status: true, fileId: f1.getId(), file: f1 };
     }
 
     function setFilePermissions(f, f1) {
@@ -413,10 +421,10 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     this.moveFromTempToFinal = function() {
         try {
             moveFromTempToFinal();
-            mailLog('move from temporary to final', true);
+            recordLog('move from temporary to final', true);
         } catch (e) {
             logError(e.message + ' (line:'+e.lineNumber+')');
-            mailLog('move from temporary to final (ERROR)', true);
+            recordLog('move from temporary to final (ERROR)', true);
         }
     };
 
@@ -598,14 +606,33 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         Logger.log(stuff);
     }
 
-    function mailLog(subject, shouldClearLog) {
+    function recordLog(subject) {
+        recordLogToSpreadsheet(subject) || mailLog(subject);
+    }
+
+    function recordLogToSpreadsheet(subject) {
+        var spreadsheet = SpreadsheetApp.open(LOG_FILE);
+        if (!spreadsheet) {
+            logError('cant open spreadsheet ' + LOG_FILE.getName());
+            return;
+        }
+        var sheet = spreadsheet.getSheets()[1];
+        if (!sheet) {
+            return false;
+        }
+
+        sheet.insertRowBefore(1);
+        var now = new Date();
+        sheet.getRange("A1:C1").setValues([[now, subject, Logger.getLog()]]);
+
+        return true;
+    }
+    function mailLog(subject) {
         var subject = 'Google Scripts: ' + subject;
         var recipient = Session.getActiveUser().getEmail();
 
         var body = Logger.getLog();
-        if (shouldClearLog) {
-            Logger.clear();
-        }
+        Logger.clear();
         MailApp.sendEmail(recipient, subject, body);
     }
 
