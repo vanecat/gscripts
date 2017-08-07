@@ -40,17 +40,17 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     var that = this;
     var RUNTIME = new Date();
 
-    this.copy = function() {
+    this.copy = function () {
         try {
             copy();
             recordLog('copy to temporary', true);
         } catch (e) {
-            logError(e.message + ' (line:'+e.lineNumber+')');
+            logError(e.message + ' (line:' + e.lineNumber + ')');
             recordLog('copy to temporary (ERROR)', true);
         }
     };
 
-    function copy () {
+    function copy() {
         var destinationRoot = DriveApp.getFolderById(getFolderIdFromURL(tempRootFolderId));
 
         if (!destinationRoot) {
@@ -60,7 +60,8 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
         var fileInfo = scanSpreadsheet();
 
-        for(var i=0; i<fileInfo.length; i++) {
+        for (var i = 0; i < fileInfo.length; i++) {
+            setCopyStatusInProgress(i);
             var f = fileInfo[i];
 
             if (!!f.copied) { // don't run a row again (twice+), if already marked copied
@@ -68,7 +69,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             }
             if (!!prioritiesToCopy) {
                 var priorityFound = false;
-                for (var j=0; j<prioritiesToCopy.length; j++) {
+                for (var j = 0; j < prioritiesToCopy.length; j++) {
                     priorityFound = priorityFound || prioritiesToCopy[j] == f['priority'];
                 }
                 if (!priorityFound) {
@@ -107,7 +108,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 'id': values[i][LOG_SHEET_FIELDS['DOCID']],
                 'newId': values[i][LOG_SHEET_FIELDS['NEWDOCID']],
                 'destinationPath': values[i][LOG_SHEET_FIELDS['PATHDESTINATION']],
-                'priority' : values[i][LOG_SHEET_FIELDS['PRIORITY']],
+                'priority': values[i][LOG_SHEET_FIELDS['PRIORITY']],
                 'index': i + 1 // the real-absolute 1-based index (accounting for a header column)
             });
         }
@@ -116,6 +117,13 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         return fileInfo;
     }
 
+    function setCopyStatusInProgress(i) {
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
+            .setValue('copy in progress');
+
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIEDDATETIME']) + (i + 2))
+            .setValue(RUNTIME);
+    }
     function updateCopyStatus(i, fileStatus) {
 
         var whoRanRange = LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['WHORAN']) + (i + 2));
@@ -498,6 +506,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
         if (!!files && !!files.hasNext) {
             while (files.hasNext()) {
+                setMergeStatusInProgress(i);
                 var file = files.next();
                 var destinationFile = fileNamesAtDestination[file.getName()];
                 if (!!destinationFile) {
@@ -552,6 +561,14 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         return LOG_INDEX_BY_NEW_IDS[file.getId()].index;
     }
 
+
+    function setMergeStatusInProgress(i) {
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
+            .setValue('merge in progress');
+
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['MERGEDDATETIME']) + logIndex )
+            .setValue(RUNTIME);
+    }
     function updateMergeStatus(status, file, fileParent, dupFile) {
         var logIndex = getIndexOfFileByNewId(file);
 
