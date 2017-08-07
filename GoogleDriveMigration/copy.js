@@ -38,6 +38,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     var LOG_SHEET, LOG_SHEET_FIELDS = {};
     var LOG_FILE = null, LOG_SHEET = null, LOG_SHEET_FIELDS = {}, LOG_SHEET_FIELDS_COUNT = 0;
     var that = this;
+    var RUNTIME = new Date();
 
     this.copy = function() {
         try {
@@ -124,7 +125,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             .setValue(fileStatus.status);
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIEDDATETIME']) + (i + 2))
-            .setValue(new Date());
+            .setValue(RUNTIME);
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
             .setValue(fileStatus.message);
@@ -559,7 +560,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             .setValue(status.status);
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['MERGEDDATETIME']) + logIndex )
-            .setValue(new Date());
+            .setValue(RUNTIME);
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + logIndex )
             .setValue(status.message);
@@ -637,8 +638,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         }
 
         sheet.insertRowBefore(1);
-        var now = new Date();
-        sheet.getRange("A1:C1").setValues([[now, subject, Logger.getLog()]]);
+        sheet.getRange("A1:C1").setValues([[RUNTIME, subject, Logger.getLog()]]);
 
         return true;
     }
