@@ -116,6 +116,10 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
 
     function updateCopyStatus(i, fileStatus) {
+
+        var whoRanRange = LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['WHORAN']) + (i + 2));
+        whoRanRange.setValue(mergeEmailIntoString(whoRanRange.getValues()[0][0], Session.getActiveUser().getEmail()));
+
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIED']) + (i + 2))
             .setValue(fileStatus.status);
 
@@ -666,6 +670,26 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             theId = re.exec(theId)[1];
         }
         return theId;
+    }
+
+    function mergeEmailIntoString(emailString, newEmail) {
+        var delim = ', ';
+        var emailArr = emailString ? emailString.split(delim) : [];
+        var emailHash = {};
+
+        for(var i = 0; i < emailArr.length; i++) {
+            var email = emailArr[i];
+            if (!!emailHash[email]) {
+                continue;
+            }
+            emailHash[email] = i;
+        }
+
+        if (typeof emailHash[newEmail] != 'undefined') {
+            emailArr.splice(emailHash[newEmail], 1);
+        }
+        emailArr.unshift(newEmail);
+        return emailArr.join(delim);
     }
 }
 
