@@ -631,7 +631,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             logError('cant open spreadsheet ' + LOG_FILE.getName());
             return;
         }
-        var sheet = spreadsheet.getSheetByName('console log');
+        var sheet = spreadsheet.getSheetByName('COPY+MERGE LOG');
         if (!sheet) {
             return false;
         }
