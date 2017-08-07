@@ -505,8 +505,8 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
         if (!!files && !!files.hasNext) {
             while (files.hasNext()) {
-                setMergeStatusInProgress(i);
                 var file = files.next();
+                setMergeStatusInProgress(file);
                 var destinationFile = fileNamesAtDestination[file.getName()];
                 if (!!destinationFile) {
                     // DUPLICATE, log it
@@ -561,11 +561,13 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
 
 
-    function setMergeStatusInProgress(i) {
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
+    function setMergeStatusInProgress(file) {
+        var i = getIndexOfFileByNewId(file);
+
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + i)
             .setValue('merge in progress');
 
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['MERGEDDATETIME']) + logIndex )
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['MERGEDDATETIME']) + i )
             .setValue(RUNTIME);
     }
     function updateMergeStatus(status, file, fileParent, dupFile) {
