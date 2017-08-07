@@ -15,7 +15,7 @@ function Copy() {
         log: 'https://docs.google.com/spreadsheets/d/1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg/edit#gid=0',
         temp: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
         final: '',
-        priority: [1,2]
+        priority: [100,200]
     };
 
     new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).copy();
@@ -28,10 +28,10 @@ function Merge() {
         log: 'https://docs.google.com/spreadsheets/d/1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg/edit#gid=0',
         temp: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
         final: '',
-        priority: [1,2]
+        priority: [100,200]
     };
 
-    new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).moveFromTempToFinal();
+    new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).merge();
 }
 
 function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolderId, prioritiesToCopy) {
@@ -122,6 +122,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIED']) + (i + 2))
             .setValue(fileStatus.status);
+
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIEDDATETIME']) + (i + 2))
+            .setValue(new Date());
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
             .setValue(fileStatus.message);
@@ -554,6 +557,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         logDebug([LOG_SHEET_FIELDS, getColumnLetter(LOG_SHEET_FIELDS['MERGED']) + logIndex], 12);
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['MERGED']) + logIndex )
             .setValue(status.status);
+
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['MERGEDDATETIME']) + logIndex )
+            .setValue(new Date());
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + logIndex )
             .setValue(status.message);
