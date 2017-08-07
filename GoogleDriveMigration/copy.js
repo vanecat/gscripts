@@ -61,12 +61,11 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         var fileInfo = scanSpreadsheet();
 
         for (var i = 0; i < fileInfo.length; i++) {
-            setCopyStatusInProgress(i);
             var f = fileInfo[i];
-
             if (!!f.copied) { // don't run a row again (twice+), if already marked copied
                 continue;
             }
+            setCopyStatusInProgress(i);
             if (!!prioritiesToCopy) {
                 var priorityFound = false;
                 for (var j = 0; j < prioritiesToCopy.length; j++) {
