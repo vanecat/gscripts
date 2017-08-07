@@ -62,6 +62,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         for(var i=0; i<fileInfo.length; i++) {
             var f = fileInfo[i];
 
+            if (!!f.completed) { // don't run a row again (twice+), if already marked completed
+                continue;
+            }
             if (!!prioritiesToCopy) {
                 var priorityFound = false;
                 for (var j=0; j<prioritiesToCopy.length; j++) {
@@ -97,6 +100,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             }
 
             fileInfo.push({
+                'completed': values[i][LOG_SHEET_FIELDS['COMPLETED']],
                 'sourcePath': values[i][LOG_SHEET_FIELDS['PATHSOURCE']],
                 'id': values[i][LOG_SHEET_FIELDS['DOCID']],
                 'newId': values[i][LOG_SHEET_FIELDS['NEWDOCID']],
@@ -645,7 +649,6 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         return String.fromCharCode("A".charCodeAt(0) + i);
     }
 }
-/* ==============================  MAIL LOG ==================================== */
 
 
 
