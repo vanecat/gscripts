@@ -18,7 +18,7 @@ function CopyIvansTestFiles_Priority_1_and_2() {
         priority: [1,2]
     };
 
-    new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).copyToTemp();
+    new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).copy();
 }
 
 
@@ -39,9 +39,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     var LOG_FILE = null, LOG_SHEET = null, LOG_SHEET_FIELDS = {}, LOG_SHEET_FIELDS_COUNT = 0;
     var that = this;
 
-    this.copyToTemp = function() {
+    this.copy = function() {
         try {
-            copyToTemp();
+            copy();
             recordLog('copy to temporary', true);
         } catch (e) {
             logError(e.message + ' (line:'+e.lineNumber+')');
@@ -49,7 +49,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         }
     };
 
-    function copyToTemp () {
+    function copy () {
         var destinationRoot = DriveApp.getFolderById(tempRootFolderId);
 
         if (!destinationRoot) {
@@ -71,15 +71,15 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                     priorityFound = priorityFound || prioritiesToCopy[j] == f['priority'];
                 }
                 if (!priorityFound) {
-                    updateMoveToTempStatus(i, {status: false, message: 'skipped'});
+                    updateCopyStatus(i, {status: false, message: 'skipped'});
                     continue;
                 }
             }
             var status = copyFile(f['id'], f['destinationPath'], destinationRoot);
             if (!!status.status && !!status.file) {
-                updateMoveToTempStatus(i, status);
+                updateCopyStatus(i, status);
             } else {
-                updateMoveToTempStatus(i, status);
+                updateCopyStatus(i, status);
             }
         }
     }
@@ -114,7 +114,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         return fileInfo;
     }
 
-    function updateMoveToTempStatus(i, fileStatus) {
+    function updateCopyStatus(i, fileStatus) {
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COMPLETED']) + (i + 2))
             .setValue(fileStatus.status);
 
@@ -422,9 +422,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
 
 
-    this.moveFromTempToFinal = function() {
+    this.merge = function() {
         try {
-            moveFromTempToFinal();
+            merge();
             recordLog('move from temporary to final', true);
         } catch (e) {
             logError(e.message + ' (line:'+e.lineNumber+')');
@@ -432,7 +432,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         }
     };
 
-    function moveFromTempToFinal (sourceRootOrNull, destinationRootOrNull) {
+    function merge (sourceRootOrNull, destinationRootOrNull) {
         var sourceRoot, destinationRoot;
         if (!sourceRootOrNull) {
             sourceRoot = DriveApp.getFolderById(tempRootFolderId);
@@ -493,7 +493,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 var destinationFile = fileNamesAtDestination[file.getName()];
                 if (!!destinationFile) {
                     // DUPLICATE, log it
-                    updateMoveToFinalStatus({status: false, message: 'existing file'}, file, null, destinationFile);
+                    updateMergeStatus({status: false, message: 'existing file'}, file, null, destinationFile);
                 } else {
                     var newParent = destinationRoot.addFile(file);
                     var oldParent = sourceRoot.removeFile(file);
@@ -507,7 +507,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                             status.message += 'cannot remove file from source folder';
                         }
                     }
-                    updateMoveToFinalStatus(status, file, newParent);
+                    updateMergeStatus(status, file, newParent);
                 }
             }
         }
@@ -517,9 +517,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 var destinationFolder = folderNamesAtDestination[folder.getName()];
                 if (!destinationFolder) {
                     destinationFolder = destinationRoot.createFolder(folder.getName());
-                    //updateMoveToFinalStatus('new folder (did not exist in destination)', newFolder);
+                    //updateMergeStatus('new folder (did not exist in destination)', newFolder);
                 }
-                moveFromTempToFinal(folder, destinationFolder);
+                merge(folder, destinationFolder);
                 if (!folder.getFiles().hasNext() && !folder.getFolders().hasNext()) {
                     sourceRoot.removeFolder(folder);
                     folder.setTrashed(true);
@@ -543,7 +543,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         return LOG_INDEX_BY_NEW_IDS[file.getId()].index;
     }
 
-    function updateMoveToFinalStatus(status, file, fileParent, dupFile) {
+    function updateMergeStatus(status, file, fileParent, dupFile) {
         var logIndex = getIndexOfFileByNewId(file);
 
         logDebug([LOG_SHEET_FIELDS, getColumnLetter(LOG_SHEET_FIELDS['COMPLETED']) + logIndex], 12);
