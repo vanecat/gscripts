@@ -62,7 +62,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         for(var i=0; i<fileInfo.length; i++) {
             var f = fileInfo[i];
 
-            if (!!f.completed) { // don't run a row again (twice+), if already marked completed
+            if (!!f.copied) { // don't run a row again (twice+), if already marked copied
                 continue;
             }
             if (!!prioritiesToCopy) {
@@ -100,7 +100,8 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             }
 
             fileInfo.push({
-                'completed': values[i][LOG_SHEET_FIELDS['COMPLETED']],
+                'copied': values[i][LOG_SHEET_FIELDS['COPIED']],
+                'merged': values[i][LOG_SHEET_FIELDS['MERGED']],
                 'sourcePath': values[i][LOG_SHEET_FIELDS['PATHSOURCE']],
                 'id': values[i][LOG_SHEET_FIELDS['DOCID']],
                 'newId': values[i][LOG_SHEET_FIELDS['NEWDOCID']],
@@ -115,7 +116,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
 
     function updateCopyStatus(i, fileStatus) {
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COMPLETED']) + (i + 2))
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIED']) + (i + 2))
             .setValue(fileStatus.status);
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
@@ -546,8 +547,8 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     function updateMergeStatus(status, file, fileParent, dupFile) {
         var logIndex = getIndexOfFileByNewId(file);
 
-        logDebug([LOG_SHEET_FIELDS, getColumnLetter(LOG_SHEET_FIELDS['COMPLETED']) + logIndex], 12);
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COMPLETED']) + logIndex )
+        logDebug([LOG_SHEET_FIELDS, getColumnLetter(LOG_SHEET_FIELDS['MERGED']) + logIndex], 12);
+        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['MERGED']) + logIndex )
             .setValue(status.status);
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + logIndex )
