@@ -140,12 +140,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
 
     function initLogSpreadsheet() {
-        var theId = masterSpreadsheetId;
-        if (theId.indexOf('http') == 0) {
-            var re = new RegExp("^https?://docs.google.com/\\w+/d/([^/]+)");
-            theId = re.exec(theId)[1];
-        }
-        LOG_FILE = DriveApp.getFileById(theId);
+        LOG_FILE = DriveApp.getFileById(getDocIdFromURL(masterSpreadsheetId));
         if (!LOG_FILE) {
             logError('no log file found');
             return;
@@ -208,7 +203,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     function copyFile(fileId, destinationPath, destinationRoot) {
         var f;
         try {
-            f = DriveApp.getFileById(fileId);
+            f = DriveApp.getFileById(getDocIdFromURL(fileId));
         } catch (e) {
             logError('file NOT found: ' + fileId);
             return { message: e.message, status: false };
@@ -653,6 +648,15 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
     function getColumnLetter(i) {
         return String.fromCharCode("A".charCodeAt(0) + i);
+    }
+
+    function getDocIdFromURL(idOrUrl) {
+        var theId = idOrUrl;
+        if (theId.indexOf('http') == 0) {
+            var re = new RegExp("^https?://docs.google.com/\\w+/d/([^/]+)");
+            theId = re.exec(theId)[1];
+        }
+        return theId;
     }
 }
 
