@@ -14,7 +14,7 @@ function Copy() {
     var props = {
         log: 'https://docs.google.com/spreadsheets/d/1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg/edit#gid=0',
         temp: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
-        final: '',
+        final: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJYzU1QnU2aE90U2M',
         priority: [100,200]
     };
 
@@ -27,7 +27,7 @@ function Merge() {
     var props = {
         log: 'https://docs.google.com/spreadsheets/d/1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg/edit#gid=0',
         temp: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
-        final: '',
+        final: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJYzU1QnU2aE90U2M',
         priority: [100,200]
     };
 
@@ -636,6 +636,8 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         if (!sheet) {
             return false;
         }
+
+        Logger.log('User running: ' + Session.getActiveUser().getEmail());
 
         sheet.insertRowBefore(1);
         sheet.getRange("A1:C1").setValues([[RUNTIME, subject, Logger.getLog()]]);
