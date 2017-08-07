@@ -10,10 +10,10 @@
  */
 
 // -----------------------  IVAN TESTING  --------------------------
-function CopyIvansTestFiles_Priority_1_and_2() {
+function Copy() {
     var props = {
-        log: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
-        temp: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
+        log: 'https://docs.google.com/spreadsheets/d/1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg/edit#gid=0',
+        temp: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
         final: '',
         priority: [1,2]
     };
@@ -23,10 +23,10 @@ function CopyIvansTestFiles_Priority_1_and_2() {
 
 
 // -----------------------  IVAN TESTING  --------------------------
-function MoveIvansTestFiles_Priority_1_and_2() {
+function Merge() {
     var props = {
-        log: '1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg',
-        temp: '0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
+        log: 'https://docs.google.com/spreadsheets/d/1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg/edit#gid=0',
+        temp: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
         final: '',
         priority: [1,2]
     };
@@ -50,7 +50,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     };
 
     function copy () {
-        var destinationRoot = DriveApp.getFolderById(tempRootFolderId);
+        var destinationRoot = DriveApp.getFolderById(getFolderIdFromURL(tempRootFolderId));
 
         if (!destinationRoot) {
             logError('no destination root folder');
@@ -436,7 +436,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     function merge (sourceRootOrNull, destinationRootOrNull) {
         var sourceRoot, destinationRoot;
         if (!sourceRootOrNull) {
-            sourceRoot = DriveApp.getFolderById(tempRootFolderId);
+            sourceRoot = DriveApp.getFolderById(getFolderIdFromURL(tempRootFolderId));
         } else {
             sourceRoot = sourceRootOrNull;
         }
@@ -449,7 +449,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                     logError('cant access MyDrive: ' + e.message + ' (line:'+e.lineNumber+')');
                 }
             } else {
-                destinationRoot = DriveApp.getFolderById(finalRootFolderId);
+                destinationRoot = DriveApp.getFolderById(getFolderIdFromURL(finalRootFolderId));
             }
         } else {
             destinationRoot = destinationRootOrNull;
@@ -654,6 +654,15 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         var theId = idOrUrl;
         if (theId.indexOf('http') == 0) {
             var re = new RegExp("^https?://docs.google.com/\\w+/d/([^/]+)");
+            theId = re.exec(theId)[1];
+        }
+        return theId;
+    }
+
+    function getFolderIdFromURL(idOrUrl) {
+        var theId = idOrUrl;
+        if (theId.indexOf('http') == 0) {
+            var re = new RegExp("^https?://drive.google.com/drive/folders/([^/]+)");
             theId = re.exec(theId)[1];
         }
         return theId;
