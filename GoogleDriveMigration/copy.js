@@ -140,7 +140,12 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
 
     function initLogSpreadsheet() {
-        LOG_FILE = DriveApp.getFileById(masterSpreadsheetId);
+        var theId = masterSpreadsheetId;
+        if (theId.indexOf('http') == 0) {
+            var re = new RegExp("^https?://docs.google.com/\\w+/d/([^/]+)");
+            theId = re.exec(theId)[1];
+        }
+        LOG_FILE = DriveApp.getFileById(theId);
         if (!LOG_FILE) {
             logError('no log file found');
             return;
