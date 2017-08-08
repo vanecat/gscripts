@@ -35,6 +35,7 @@ function Merge() {
 }
 
 function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolderId, prioritiesToCopy) {
+    var UNDEFINED;
     var LOG_SHEET, LOG_SHEET_FIELDS = {};
     var LOG_FILE = null, LOG_SHEET = null, LOG_SHEET_FIELDS = {}, LOG_SHEET_FIELDS_COUNT = 0;
     var that = this;
@@ -548,6 +549,10 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
     var LOG_INDEX_BY_NEW_IDS = null;
     function getIndexOfFileByNewId (file) {
+        if (!file || !file.getId || !file.getId()) {
+            return UNDEFINED;
+        }
+
         if (!LOG_INDEX_BY_NEW_IDS) {
             LOG_INDEX_BY_NEW_IDS = {};
             var filesInfo = scanSpreadsheet();
@@ -556,13 +561,23 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
                 LOG_INDEX_BY_NEW_IDS[f.newId] = f;
             }
         }
+
         logDebug([LOG_INDEX_BY_NEW_IDS, file, file.getId()], 12);
+
+        if (!LOG_INDEX_BY_NEW_IDS[file.getId()]) {
+            logError('File not in spreadsheet: ' + file.getName() + ' / ' + file.getUrl());
+            return UNDEFINED;
+        }
+
         return LOG_INDEX_BY_NEW_IDS[file.getId()].index;
     }
 
 
     function setMergeStatusInProgress(file) {
         var i = getIndexOfFileByNewId(file);
+        if (isUndefined(i)) {
+            return;
+        }
 
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + i)
             .setValue('merge in progress');
@@ -572,6 +587,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
     function updateMergeStatus(status, file, fileParent, dupFile) {
         var logIndex = getIndexOfFileByNewId(file);
+        if (isUndefined(logIndex)) {
+            return;
+        }
 
         logDebug([LOG_SHEET_FIELDS, getColumnLetter(LOG_SHEET_FIELDS['MERGED']) + logIndex], 12);
         LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['MERGED']) + logIndex )
@@ -716,6 +734,10 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         }
         emailArr.unshift(newEmail);
         return emailArr.join(delim);
+    }
+
+    function isUndefined(a) {
+        return typeof a == 'undefined';
     }
 }
 
