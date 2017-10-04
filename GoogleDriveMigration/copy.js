@@ -9,30 +9,31 @@
  * Full legal text of the CC BY-SA license: https://creativecommons.org/licenses/by-sa/4.0/legalcode
  */
 
-// -----------------------  IVAN TESTING  --------------------------
-function Copy() {
+// -----------------------  HYPHAE FILES --------------------------
+function COPY() {
     var props = {
-        log: 'https://docs.google.com/spreadsheets/d/1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg/edit#gid=0',
-        temp: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
-        final: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJYzU1QnU2aE90U2M',
-        priority: [100,200]
+        spreadsheet: '14LNDEQ3ug52yC9J8Soi8yvLty4QB6554eKJgfzJ0kGE',
+        tempRootFolder: '0B1dSxQ7iFUSza1RMU19mb01jWDA',
+        finalRootFolder: '0AGgF4XltLBRlUk9PVA',
+        priority: [1]
     };
 
-    new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).copy();
+
+    new HyphaeDriveFiles(props.spreadsheet, props.tempRootFolder, props.finalRootFolder, props.priority).copy();
 }
 
-
-// -----------------------  IVAN TESTING  --------------------------
-function Merge() {
+function MERGE() {
     var props = {
-        log: 'https://docs.google.com/spreadsheets/d/1o3LOPYmN4dKEZV5Bh31aDYhq5IkZlslsQZyzRtgMGMg/edit#gid=0',
-        temp: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJOUZPa0M3ZWlrcW8',
-        final: 'https://drive.google.com/drive/folders/0B7kqBR5fP2nJYzU1QnU2aE90U2M',
-        priority: [100,200]
+        spreadsheet: '14LNDEQ3ug52yC9J8Soi8yvLty4QB6554eKJgfzJ0kGE',
+        tempRootFolder: '0B1dSxQ7iFUSza1RMU19mb01jWDA',
+        finalRootFolder: '0AGgF4XltLBRlUk9PVA',
+        priority: [1]
     };
 
-    new HyphaeDriveFiles(props.log, props.temp, props.final, props.priority).merge();
+
+    new HyphaeDriveFiles(props.spreadsheet, props.tempRootFolder, props.finalRootFolder, props.priority).merge();
 }
+
 
 function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolderId, prioritiesToCopy) {
     var UNDEFINED;
@@ -118,25 +119,37 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
 
     function setCopyStatusInProgress(i) {
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
-            .setValue('copy in progress');
+        if (!!LOG_SHEET_FIELDS['LOG']) {
+            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
+                .setValue('copy in progress');
+        }
 
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIEDDATETIME']) + (i + 2))
-            .setValue(RUNTIME);
+        if (!!LOG_SHEET_FIELDS['COPIEDDATETIME']) {
+            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIEDDATETIME']) + (i + 2))
+                .setValue(RUNTIME);
+        }
     }
     function updateCopyStatus(i, fileStatus) {
 
-        var whoRanRange = LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['WHORAN']) + (i + 2));
-        whoRanRange.setValue(mergeEmailIntoString(whoRanRange.getValues()[0][0], Session.getActiveUser().getEmail()));
+        if (!!LOG_SHEET_FIELDS['WHORAN']) {
+            var whoRanRange = LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['WHORAN']) + (i + 2));
+            whoRanRange.setValue(mergeEmailIntoString(whoRanRange.getValues()[0][0], Session.getActiveUser().getEmail()));
+        }
 
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIED']) + (i + 2))
-            .setValue(fileStatus.status);
+        if (!!LOG_SHEET_FIELDS['COPIED']) {
+            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIED']) + (i + 2))
+                .setValue(fileStatus.status);
+        }
 
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIEDDATETIME']) + (i + 2))
-            .setValue(RUNTIME);
+        if (!!LOG_SHEET_FIELDS['COPIEDDATETIME']) {
+            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['COPIEDDATETIME']) + (i + 2))
+                .setValue(RUNTIME);
+        }
 
-        LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
-            .setValue(fileStatus.message);
+        if (!!LOG_SHEET_FIELDS['LOG']) {
+            LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['LOG']) + (i + 2))
+                .setValue(fileStatus.message);
+        }
 
         if (!!fileStatus.status && !!fileStatus.fileId) {
             LOG_SHEET.getRange(getColumnLetter(LOG_SHEET_FIELDS['NEWDOCID']) + (i + 2))
@@ -740,7 +753,6 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         return typeof a == 'undefined';
     }
 }
-
 
 
 
