@@ -11,39 +11,48 @@
 
 // -----------------------  HYPHAE FILES --------------------------
 function COPY() {
-    var props = {
-        spreadsheet: '14LNDEQ3ug52yC9J8Soi8yvLty4QB6554eKJgfzJ0kGE',
-        tempRootFolder: '0B1dSxQ7iFUSza1RMU19mb01jWDA',
-        finalRootFolder: '0AGgF4XltLBRlUk9PVA',
-        priority: [1]
-    };
-
-
-    new HyphaeDriveFiles(props.spreadsheet, props.tempRootFolder, props.finalRootFolder, props.priority).copy();
+    initHyphaeDriveFiles().copy();
 }
 
 function MERGE() {
-    var props = {
-        spreadsheet: '14LNDEQ3ug52yC9J8Soi8yvLty4QB6554eKJgfzJ0kGE',
-        tempRootFolder: '0B1dSxQ7iFUSza1RMU19mb01jWDA',
-        finalRootFolder: '0AGgF4XltLBRlUk9PVA',
-        priority: [1]
-    };
-
-
-    new HyphaeDriveFiles(props.spreadsheet, props.tempRootFolder, props.finalRootFolder, props.priority).merge();
+    initHyphaeDriveFiles().merge();
 }
 
+function TEST_initSpreadSheet() {
+    initHyphaeDriveFiles().testInitSpreadsheet();
+}
+
+function initHyphaeDriveFiles() {
+    var props = PropertiesService.getScriptProperties();
+    if (!props || !props.getProperties || !props.getProperties().spreadsheet) {
+        throw Error('no hyphae drive file migration properties');
+    }
+    props = props.getProperties();
+
+    Logger.log(props);
+    return new HyphaeDriveFiles(props.spreadsheet, props.tempRootFolder, props.finalRootFolder, props.priority);
+}
 
 function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolderId, prioritiesToCopy) {
     var UNDEFINED;
     var LOG_SHEET, LOG_SHEET_FIELDS = {};
     var LOG_FILE = null, LOG_SHEET = null, LOG_SHEET_FIELDS = {}, LOG_SHEET_FIELDS_COUNT = 0;
+    var DEBUG_ONLY_FUNCTION_IDS = [];
     var that = this;
     var RUNTIME = new Date();
 
+    function init() {
+
+        var debugIds = PropertiesService.getScriptProperties().getProperty('debugIds');
+        if (!!debugIds && typeof debugIds == 'string') {
+            DEBUG_ONLY_FUNCTION_IDS = debugIds.split(',');
+            Logger.log(DEBUG_ONLY_FUNCTION_IDS);
+        }
+    }
+
     this.copy = function () {
         try {
+            init();
             copy();
             recordLog('copy to temporary', true);
         } catch (e) {
@@ -70,8 +79,9 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
             setCopyStatusInProgress(i);
             if (!!prioritiesToCopy) {
                 var priorityFound = false;
-                for (var j = 0; j < prioritiesToCopy.length; j++) {
-                    priorityFound = priorityFound || prioritiesToCopy[j] == f['priority'];
+                var prioritiesArr = prioritiesToCopy.split(',');
+                for (var j = 0; j < prioritiesArr.length; j++) {
+                    priorityFound = priorityFound || prioritiesArr[j] == f['priority'];
                 }
                 if (!priorityFound) {
                     updateCopyStatus(i, {status: false, message: 'skipped'});
@@ -90,7 +100,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     function scanSpreadsheet() {
         initLogSpreadsheet();
 
-        logDebug(LOG_SHEET_FIELDS, 12);
+        logDebug(LOG_SHEET_FIELDS, 11);
         var values = LOG_SHEET.getSheetValues(1, 1, 100, LOG_SHEET_FIELDS_COUNT);
 
         var fileInfo = [];
@@ -191,7 +201,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
                 for (var i = 0; i < values0[0].length; i++) {
                     if (!values0[0][i]) {
-                        break;
+                        continue;
                     }
                     LOG_SHEET_FIELDS[values0[0][i]] = i;
                     LOG_SHEET_FIELDS_COUNT++;
@@ -454,6 +464,7 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
     this.merge = function() {
         try {
+            init();
             merge();
             recordLog('move from temporary to final', true);
         } catch (e) {
@@ -659,10 +670,13 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
 
     function logDebug(stuff, debugId) {
-        var debugOnlyIds = [];
+        if (DEBUG_ONLY_FUNCTION_IDS.length == 0) {
+            return;
+        }
+
         var c = '|';
         // if the debug id is contained in the ids array, then add the debug
-        if ((c+debugOnlyIds.join(c)+c).indexOf(c+debugId+c) >= 0) {
+        if ((c+DEBUG_ONLY_FUNCTION_IDS.join(c)+c).indexOf(c+debugId+c) >= 0) {
             Logger.log(stuff);
         }
     }
@@ -683,7 +697,10 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         }
         var sheet = spreadsheet.getSheetByName('COPY+MERGE LOG');
         if (!sheet) {
-            return false;
+            sheet = spreadsheet.insertSheet("COPY+MERGE LOG", spreadsheet.getNumSheets() + 1);
+            if (!sheet) {
+                return false;
+            }
         }
 
         Logger.log('User running: ' + Session.getActiveUser().getEmail());
@@ -751,6 +768,12 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
     function isUndefined(a) {
         return typeof a == 'undefined';
+    }
+
+    this.testInitSpreadsheet = function() {
+        init();
+        scanSpreadsheet();
+        recordLog('testing init spreadsheet', true);
     }
 }
 
