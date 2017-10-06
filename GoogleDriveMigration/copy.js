@@ -19,17 +19,27 @@ function MERGE() {
 }
 
 function TEST_initSpreadSheet() {
-    initHyphaeDriveFiles().testInitSpreadsheet();
+    var hyphaeDrive = initHyphaeDriveFiles();
+    hyphaeDrive.addDebugId(11);
+    hyphaeDrive.testInitSpreadsheet();
 }
 
 function initHyphaeDriveFiles() {
     var props = PropertiesService.getScriptProperties();
     if (!props || !props.getProperties || !props.getProperties().spreadsheet) {
-        throw Error('no hyphae drive file migration properties');
+        var errorDetails = '';
+        if (!props) {
+            errorDetails = 'cannot fetch properties';
+        } else if (!props.getProperties) {
+            errorDetails = 'bad properties returned';
+        } else {
+            errorDetails = 'important properties are missing';
+        }
+        throw Error('issues with Hyphae Drive File Migration properties: ' + errorDetails, 'hyphaeProperties');
     }
     props = props.getProperties();
 
-    Logger.log(props);
+    Logger.log("Project properties: ", props);
     return new HyphaeDriveFiles(props.spreadsheet, props.tempRootFolder, props.finalRootFolder, props.priority);
 }
 
@@ -37,22 +47,12 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     var UNDEFINED;
     var LOG_SHEET, LOG_SHEET_FIELDS = {};
     var LOG_FILE = null, LOG_SHEET = null, LOG_SHEET_FIELDS = {}, LOG_SHEET_FIELDS_COUNT = 0;
-    var DEBUG_ONLY_FUNCTION_IDS = [];
+    var DEBUG_ONLY_FUNCTION_IDS = {};
     var that = this;
     var RUNTIME = new Date();
 
-    function init() {
-
-        var debugIds = PropertiesService.getScriptProperties().getProperty('debugIds');
-        if (!!debugIds && typeof debugIds == 'string') {
-            DEBUG_ONLY_FUNCTION_IDS = debugIds.split(',');
-            Logger.log(DEBUG_ONLY_FUNCTION_IDS);
-        }
-    }
-
     this.copy = function () {
         try {
-            init();
             copy();
             recordLog('copy to temporary', true);
         } catch (e) {
@@ -464,7 +464,6 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
 
     this.merge = function() {
         try {
-            init();
             merge();
             recordLog('move from temporary to final', true);
         } catch (e) {
@@ -669,14 +668,13 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
         return getFileOrFolderPath(folder) + '/' + folder.getName();
     }
 
-    function logDebug(stuff, debugId) {
-        if (DEBUG_ONLY_FUNCTION_IDS.length == 0) {
-            return;
-        }
+    this.addDebugId = function(debugId) {
+        DEBUG_ONLY_FUNCTION_IDS[debugId] = true;
+    }
 
-        var c = '|';
+    function logDebug(stuff, debugId) {
         // if the debug id is contained in the ids array, then add the debug
-        if ((c+DEBUG_ONLY_FUNCTION_IDS.join(c)+c).indexOf(c+debugId+c) >= 0) {
+        if (!!DEBUG_ONLY_FUNCTION_IDS[debugId]) {
             Logger.log(stuff);
         }
     }
@@ -771,7 +769,6 @@ function HyphaeDriveFiles(masterSpreadsheetId, tempRootFolderId, finalRootFolder
     }
 
     this.testInitSpreadsheet = function() {
-        init();
         scanSpreadsheet();
         recordLog('testing init spreadsheet', true);
     }
