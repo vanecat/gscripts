@@ -39,7 +39,7 @@ function initHyphaeDriveFiles() {
     }
     props = props.getProperties();
 
-    Logger.log("Project properties: ", props);
+    Logger.log("Project properties: "); Logger.log(props);
     return new HyphaeDriveFiles(props.spreadsheet, props.tempRootFolder, props.finalRootFolder, props.priority);
 }
 
