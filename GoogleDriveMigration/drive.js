@@ -21,28 +21,28 @@ var DriveFileClass = function() {};
 
 DriveFileClass.UNTITLED = 'untitled';
 
-DriveAppClass.prototype.parents = [];
-DriveAppClass.prototype.getParents = function() {
+DriveFileClass.prototype.parents = [];
+DriveFileClass.prototype.getParents = function() {
     return new DriveIterator(this.parents);
 };
 
-DriveAppClass.prototype.name = null;
-DriveAppClass.prototype.getName = function() {
+DriveFileClass.prototype.name = null;
+DriveFileClass.prototype.getName = function() {
     return this.name;
 };
 
-DriveAppClass.prototype.url = null;
-DriveAppClass.prototype.getUrl = function() {
+DriveFileClass.prototype.url = null;
+DriveFileClass.prototype.getUrl = function() {
     return this.url;
 };
 
-DriveAppClass.prototype.name = null;
-DriveAppClass.prototype.getName = function() {
+DriveFileClass.prototype.name = null;
+DriveFileClass.prototype.getName = function() {
     return this.name;
 };
 
-DriveAppClass.prototype.id = null;
-DriveAppClass.prototype.getId = function() {
+DriveFileClass.prototype.id = null;
+DriveFileClass.prototype.getId = function() {
     return this.id;
 };
 
@@ -117,7 +117,7 @@ DriveAppClass.prototype.getFolderById  = function(id) {
 
 
 DriveAppClass.prototype.getFileById  = function(id) {
-    return
+
 };
 
 
@@ -131,16 +131,20 @@ function getArgs(a) {
     return Array.prototype.slice.apply(a);
 }
 
-Object.prototype.extend = function(klass) {
-    klass.prototype.__proto__ = this.prototype;
-};
-
 Object.prototype.extends = function(klass) {
     this.prototype.__proto__ = klass.prototype;
 };
 
-Object.prototype.parent= function(klass) {
-    klass.prototype.__proto__ = this.prototype;
+Object.prototype.inherits = function(klass) {
+    this.extends(klass);
+}
+
+Object.prototype.isChildClassOf = function(klass) {
+    return this.prototype.__proto__ == klass.prototype;
+};
+
+Object.prototype.isParentClassOf = function(klass) {
+    return klass.prototype.__proto__ == this.prototype;
 };
 
 Object.prototype.isInstanceOf = function(k) { return (this instanceof k); };
