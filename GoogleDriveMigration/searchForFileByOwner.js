@@ -1,9 +1,4 @@
 var LOG_FILE, LOG_SHEET, RUNTIME = new Date();
-var MY_LOG = [];
-
-function log(a) {
-    MY_LOG.push(a);
-}
 
 function getSharedFiles() {
     initLogSpreadsheet();
@@ -12,19 +7,10 @@ function getSharedFiles() {
     getFiles(files, "shared files");
 }
 
-function testLogFile() {
-    initLogSpreadsheet();
-
-    log([1,2,3]);
-    log('b');
-
-    recordLog('logger test');
-}
 
 function getFiles(files, label, doNotLog) {
     if (!files || !files.hasNext) {
-        log(" has no/invalid child files");
-        recordLog('error');
+        logStatus('error', "has no/invalid child files");
         return;
     }
 
@@ -35,20 +21,24 @@ function getFiles(files, label, doNotLog) {
         }
         var f = files.next();
 
-        logProperties(f);
+        logProperties(f, i);
     }
-    recordLog('success');
+    logStatus('success', 'DONE scanning');
 }
 
-var logPropertyHeaders = [];
-function logProperties(f) {
+function logError(message) {
+    logStatus('error', message);
+}
+function logStatus(status, message) {
+    recordToLog('status: '+status, null, message);
+}
+function logProperties(f, fileIndex) {
     if (!f) {
         return;
     }
-    logPropertyHeaders = [];
+
     var name = 'not enough permissions for name';
     try {
-
         name = f.getName();
     } catch (e) {}
 
@@ -56,8 +46,6 @@ function logProperties(f) {
     try {
         isTrashed = f.isTrashed();
     } catch (e) {}
-
-    f.isTrashed() ? "trashed" : "";
 
     var size = 'not enough permissions for size';
     try {
@@ -119,8 +107,7 @@ function logProperties(f) {
         }
     } catch(e) {}
 
-
-    log([name, isTrashed, size, url, fid, sharingPermission, sharingAccess, owner, ownerEmail, viewersString, editorsString, parents, parentsString ]);
+    recordToLog('file', fileIndex, [name, isTrashed, size, url, fid, sharingPermission, sharingAccess, ownerEmail, viewersString, editorsString, parentsString ]);
 }
 
 
@@ -146,44 +133,46 @@ function initLogSpreadsheet() {
             logError('cant open spreadsheet ' + LOG_FILE.getName());
             return;
         }
-        var sheet = spreadsheet.getSheets()[0];
+        var currentUserEmail = Session.getActiveUser().getEmail(),
+            sheetName = currentUserEmail.replace('@','<at>'), // let's name the sheet by the current user's email
+            sheet = spreadsheet.getSheetByName(sheetName);
         if (!sheet) {
-            logError('cant open the 1st of the spreadsheet ' + LOG_FILE.getName());
-            return;
+            sheet = spreadsheet.insertSheet(sheetName, spreadsheet.getNumSheets() + 1);
+            if (!sheet) {
+                logError('cant open the 1st of the spreadsheet ' + LOG_FILE.getName());
+                return false;
+            }
+            // ONLY if creating it from scratch => clear the sheet
+            sheet.getRange('A1:Z1000').deleteCells(); // clear the sheet
         }
+
         LOG_SHEET = sheet;
     }
+
+    var headers = ['name', 'isTrashed', 'size', 'url', 'ID', 'sharingPermission', 'sharingAccess', 'owner', 'viewers', 'editors', 'folder'];
+    headers.splice(0,0,'date/time', 'subject', 'index');
+    sheet.getRange(getColumnLetterRange(headers, 1 /* row 1 */)).setValues([headers]);
+
 }
 
-function recordLog(subject) {
-    var spreadsheet = SpreadsheetApp.open(LOG_FILE);
-    if (!spreadsheet) {
-        logError('cant open spreadsheet ' + LOG_FILE.getName());
+function recordToLog(subject, index, itemToLog) {
+    if (!LOG_SHEET) {
         return;
     }
-    var sheetName = 'test';
-    var sheet = spreadsheet.getSheetByName(sheetName);
-    if (!sheet) {
-        sheet = spreadsheet.insertSheet(sheetName, spreadsheet.getNumSheets() + 1);
-        if (!sheet) {
-            return false;
-        }
+    var sheet = LOG_SHEET;
+
+
+    sheet.insertRowBefore(2);
+
+    var logLine;
+    if (!(itemToLog instanceof Array)) {
+        logLine = [itemToLog];
+    } else {
+        logLine = Array.prototype.constructor.apply(null, itemToLog);
     }
+    logLine.splice(0,0, RUNTIME, subject, (typeof index == 'undefined' ? '' : index));
 
-    log('User running: ' + Session.getActiveUser().getEmail());
-
-    for (var i=0; i<MY_LOG.length; i++) {
-        sheet.insertRowBefore(1);
-
-        if (!(MY_LOG[i] instanceof Array)) {
-            MY_LOG[i] = [RUNTIME, subject, MY_LOG[i]];
-        } else {
-            MY_LOG[i].unshift(subject);
-            MY_LOG[i].unshift(RUNTIME);
-        }
-        var lastColumn = getColumnLetter(MY_LOG[i].length - 1);
-        sheet.getRange('A1:'+lastColumn+'1').setValues([MY_LOG[i]]);
-    }
+    sheet.getRange(getColumnLetterRange(logLine, 2 /* row 2 */)).setValues([logLine]);
 
     return true;
 }
@@ -197,6 +186,13 @@ function getDocIdFromURL(idOrUrl) {
     return theId;
 }
 
+function getColumnLetterRange(arrayish, rowNum) {
+    var firstColumnLetter = 'A',
+        lastColumnLetter = getColumnLetter(arrayish.length);
+    return firstColumnLetter+rowNum+':'+lastColumnLetter+rowNum;
+}
+
+// "i" is 1-based index
 function getColumnLetter(i) {
-    return String.fromCharCode("A".charCodeAt(0) + i);
+    return String.fromCharCode("A".charCodeAt(0) + i - 1); // substract one so that column 1 = A (because i is 1-based)
 }
