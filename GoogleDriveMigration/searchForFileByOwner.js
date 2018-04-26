@@ -3,7 +3,8 @@ function findFiles() {
 }
 function _SharedFilesUtils() {
     var LOG_SHEET, RUNTIME = new Date(),
-        STATUS_COMPLETE = 'COMPLETE';
+        STATUS_COMPLETE = 'COMPLETE',
+        STATUS_IN_PROGRESS = 'IN_PROGRESS';
 
 
     var findSharedFiles = function() {
@@ -20,21 +21,45 @@ function _SharedFilesUtils() {
 
         var i = 0;
         while (files.hasNext()) {
-            if (i++ > 1000) {
+            if (i++ > 100) {
                 break;
             }
             var f = files.next();
 
-            logFileInfo(f, i, actionName);
+
+            var lastIndex = parseInt(getLastIndexIfLastRunDidNotComplete(actionName));
+
+            // If last index is set, and is greater than the current index
+            //    =>  we have already scanned this file, SKIP IT
+            if (!!lastIndex && i < lastIndex) { // will re-run last file processed
+                continue;
+            }
+
+            var ownerEmailToSearchFor = getScriptProperties().SHARED_FILES_OWNER_EMAIL_SEARCH;
+            if (!ownerEmailToSearchFor) {
+                throw Error('owner email is not specified in script properties yet');
+            }
+
+            var ownerEmail = 'none';
+            try {
+                var owner = f.getOwner();
+                ownerEmail = owner.getEmail();
+            } catch (e) {}
+
+            if (ownerEmail == ownerEmailToSearchFor || ownerEmail == 'none') {
+                logFileInfo(f, i, actionName, true /* is in loop */);
+            }
+
+
         }
         logStatus(actionName, STATUS_COMPLETE);
     };
     this.findSharedFiles  = findSharedFiles;
 
     function logStatus(action, status) {
-        recordToLog(action, status, null /* no index */, message);
+        recordToLog(action, status, null /* no index */);
     }
-    function logFileInfo(f, fileIndex, actionName) {
+    function logFileInfo(f, fileIndex, actionName, isInLoop) {
         if (!f) {
             return;
         }
@@ -109,13 +134,7 @@ function _SharedFilesUtils() {
             }
         } catch(e) {}
 
-        var ownerEmailToSearchFor = getScriptProperties().SHARED_FILES_OWNER_EMAIL_SEARCH;
-        if (!ownerEmailToSearchFor) {
-            throw Error('owner email is not specified in script properties yet');
-        }
-        if (ownerEmail == ownerEmailToSearchFor || ownerEmail == 'none') {
-            recordToLog(actionName, null, fileIndex, [name, isTrashed, size, url, fid, sharingPermission, sharingAccess, ownerEmail, viewersString, editorsString, parentsString ]);
-        }
+        recordToLog(actionName, null, fileIndex, [name, isTrashed, size, url, fid, sharingPermission, sharingAccess, ownerEmail, viewersString, editorsString, parentsString ], isInLoop);
     }
 
 
@@ -174,26 +193,76 @@ function _SharedFilesUtils() {
 
     }
 
-    function recordToLog(action, status, index, itemToLog) {
+    function recordToLog(action, status, index, itemToLog, isInLoop) {
         if (!LOG_SHEET) {
             return;
         }
         var sheet = LOG_SHEET;
 
+        var rowNumber = 2; // by defaul all log records go to top row (but under the header row) i.e. into row 2
 
-        sheet.insertRowBefore(2);
+        // if we are recording to log, while being in a loop (find files/folders)
+        //   let's update/add an INPROGRESS bar
+        if (!!isInLoop) {
+            updateActiveInProgressRow(action, index);
+            rowNumber = 3; // update row number to three to account for the IN-PROGRESS line
+        }
+
+        sheet.insertRowBefore(rowNumber);
 
         var logLine;
-        if (!(itemToLog instanceof Array)) {
+        if (!itemToLog) {
+            logLine = [];
+        } else if (!(itemToLog instanceof Array)) {
             logLine = [itemToLog];
         } else {
             logLine = Array.prototype.constructor.apply(null, itemToLog);
         }
         logLine.splice(0,0, RUNTIME, action, status, (typeof index == 'undefined' ? '' : index));
 
-        sheet.getRange(getColumnLetterRange(logLine, 2 /* row 2 */)).setValues([logLine]);
+        sheet.getRange(getColumnLetterRange(logLine, rowNumber)).setValues([logLine]);
 
         return true;
+    }
+
+    function getLastIndexIfLastRunDidNotComplete(action) {
+        // get range and values (in an array object)
+        var inProgressRow = getActiveInProgressRow(action);
+
+        if (!!inProgressRow) {
+            return inProgressRow[1][0][3]; //
+        }
+        return 0;
+    }
+
+    function updateActiveInProgressRow(action, newIndex) {
+        // get range of first 4 columns (date/time, action, status, index) to check
+        var inProgressRow = getActiveInProgressRow(action);
+
+        // if progress row exists, update it
+        if (!!inProgressRow) {
+            var range = inProgressRow[0],
+                values = inProgressRow[1];
+            values[0][3] = newIndex; // update index to current index
+            range.setValues(values);
+        } else {
+            // else add it (at row 2)
+            LOG_SHEET.insertRowBefore(2); // row 2
+            var range = LOG_SHEET.getRange('A2:D2'); // row 2 => 4 values  (columns)
+            var values = [[RUNTIME, action, STATUS_IN_PROGRESS, newIndex]];
+            range.setValues(values);
+        }
+    }
+    // try to get the active in-Progress row for a given action
+    //   i.e. (it should be row 2 if active) or if last run of type ACTION did not complete
+    function getActiveInProgressRow(action) {
+        // get range of first 4 columns (date/time, action, status, index) to check
+        var inProgressCellsRange = LOG_SHEET.getRange('A2:D2'),
+            inProgressCellsValues = inProgressCellsRange.getValues();
+        if (inProgressCellsValues[0][1] == action && inProgressCellsValues[0][2] == STATUS_IN_PROGRESS) {
+            return [inProgressCellsRange, inProgressCellsValues]; // return range + values in an array
+        }
+        return null; // none
     }
 
     function getDocIdFromURL(idOrUrl) {
