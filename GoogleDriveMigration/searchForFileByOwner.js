@@ -109,7 +109,11 @@ function _SharedFilesUtils() {
             }
         } catch(e) {}
 
-        if (ownerEmail == 'laurenzamontana@gmail.com' || ownerEmail == 'none') {
+        var ownerEmailToSearchFor = getScriptProperties().SHARED_FILES_OWNER_EMAIL_SEARCH;
+        if (!ownerEmailToSearchFor) {
+            throw Error('owner email is not specified in script properties yet');
+        }
+        if (ownerEmail == ownerEmailToSearchFor || ownerEmail == 'none') {
             recordToLog('file', fileIndex, [name, isTrashed, size, url, fid, sharingPermission, sharingAccess, ownerEmail, viewersString, editorsString, parentsString ]);
         }
     }
@@ -124,31 +128,33 @@ function _SharedFilesUtils() {
         return theId;
     }
 
-    function getLogFileId() {
+    function getScriptProperties() {
         var props = PropertiesService.getScriptProperties();
-        if (!props || !props.getProperties || !props.getProperties().logFile) {
+        if (!props || !props.getProperties) {
             var errorDetails = '';
             if (!props) {
-                errorDetails = 'cannot fetch properties';
+                errorDetails = 'cannot fetch script properties';
             } else if (!props.getProperties) {
-                errorDetails = 'bad properties returned';
-            } else {
-                errorDetails = 'log file NOT specified';
+                errorDetails = 'bad script properties returned';
             }
             throw Error(errorDetails);
         }
-        return props.getProperties().SHARED_FILES_LOG;
+        return props.getProperties();
     }
 
     function initLogSpreadsheet() {
-        LOG_FILE = DriveApp.getFileById(getDocIdFromURL(getLogFileId()));
-        if (!LOG_FILE) {
+        var logFileId = getScriptProperties().SHARED_FILES_LOG;
+        if (!logFileId) {
+            throw Error('log file name not specified in script properties yet');
+        }
+        var logFile = DriveApp.getFileById(getDocIdFromURL(logFileId));
+        if (!logFile) {
             throw Error('log file cannot be located');
             return;
         } else {
-            var spreadsheet = SpreadsheetApp.open(LOG_FILE);
+            var spreadsheet = SpreadsheetApp.open(logFile);
             if (!spreadsheet) {
-                logError('log file wont open: ' + LOG_FILE.getName());
+                logError('log file wont open: ' + logFile.getName());
                 return;
             }
             var currentUserEmail = Session.getActiveUser().getEmail(),
@@ -157,7 +163,7 @@ function _SharedFilesUtils() {
             if (!sheet) {
                 sheet = spreadsheet.insertSheet(sheetName, spreadsheet.getNumSheets() + 1);
                 if (!sheet) {
-                    logError('cant open the 1st of the spreadsheet ' + LOG_FILE.getName());
+                    logError('cant open the 1st of the spreadsheet ' + logFile.getName());
                     return false;
                 }
             }
