@@ -21,9 +21,8 @@ function _SharedFilesUtils() {
 
         var i = 0;
         while (files.hasNext()) {
-            if (i++ > 100) {
-                break;
-            }
+            i++;
+            //if (i > 1000) {  break;  }
             var f = files.next();
 
 
@@ -46,7 +45,15 @@ function _SharedFilesUtils() {
                 ownerEmail = owner.getEmail();
             } catch (e) {}
 
-            if (ownerEmail == ownerEmailToSearchFor || ownerEmail == 'none') {
+            var editorsEmails = {};
+            try {
+                var editors = f.getEditors();
+                for(var j=0;j<editors.length;j++) {
+                    editorsEmails[editors[j].getEmail()] = true;
+                }
+            } catch(e) {}
+
+            if (ownerEmail == ownerEmailToSearchFor || !!editorsEmails[ownerEmail]) {
                 logFileInfo(f, i, actionName, true /* is in loop */);
             }
 
