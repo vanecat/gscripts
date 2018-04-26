@@ -1,11 +1,14 @@
-function scanFiles() {
-    new _SharedFilesUtils().scanSharedFiles();
+function findFiles() {
+    new _SharedFilesUtils().findSharedFiles();
 }
 function _SharedFilesUtils() {
-    var LOG_SHEET, RUNTIME = new Date();
+    var LOG_SHEET, RUNTIME = new Date(),
+        STATUS_COMPLETE = 'COMPLETE';
 
 
-    var scanSharedFiles = function() {
+    var findSharedFiles = function() {
+        var actionName = 'find_files_owned';
+
         initLogSpreadsheet();
 
         var files = DriveApp.searchFiles("sharedWithMe");
@@ -22,19 +25,16 @@ function _SharedFilesUtils() {
             }
             var f = files.next();
 
-            logFileInfo(f, i);
+            logFileInfo(f, i, actionName);
         }
-        logStatus('success', 'DONE scanning');
+        logStatus(actionName, STATUS_COMPLETE);
     };
-    this.scanSharedFiles  = scanSharedFiles;
+    this.findSharedFiles  = findSharedFiles;
 
-    function logError(message) {
-        logStatus('error', message);
+    function logStatus(action, status) {
+        recordToLog(action, status, null /* no index */, message);
     }
-    function logStatus(status, message) {
-        recordToLog('status: '+status, null, message);
-    }
-    function logFileInfo(f, fileIndex) {
+    function logFileInfo(f, fileIndex, actionName) {
         if (!f) {
             return;
         }
@@ -114,7 +114,7 @@ function _SharedFilesUtils() {
             throw Error('owner email is not specified in script properties yet');
         }
         if (ownerEmail == ownerEmailToSearchFor || ownerEmail == 'none') {
-            recordToLog('file', fileIndex, [name, isTrashed, size, url, fid, sharingPermission, sharingAccess, ownerEmail, viewersString, editorsString, parentsString ]);
+            recordToLog(actionName, null, fileIndex, [name, isTrashed, size, url, fid, sharingPermission, sharingAccess, ownerEmail, viewersString, editorsString, parentsString ]);
         }
     }
 
@@ -150,12 +150,10 @@ function _SharedFilesUtils() {
         var logFile = DriveApp.getFileById(getDocIdFromURL(logFileId));
         if (!logFile) {
             throw Error('log file cannot be located');
-            return;
         } else {
             var spreadsheet = SpreadsheetApp.open(logFile);
             if (!spreadsheet) {
-                logError('log file wont open: ' + logFile.getName());
-                return;
+                throw Error('log file wont open: ' + logFile.getName());
             }
             var currentUserEmail = Session.getActiveUser().getEmail(),
                 sheetName = currentUserEmail.replace('@','<at>'), // let's name the sheet by the current user's email
@@ -163,8 +161,7 @@ function _SharedFilesUtils() {
             if (!sheet) {
                 sheet = spreadsheet.insertSheet(sheetName, spreadsheet.getNumSheets() + 1);
                 if (!sheet) {
-                    logError('cant open the 1st of the spreadsheet ' + logFile.getName());
-                    return false;
+                    throw Error('cant open the 1st of the spreadsheet ' + logFile.getName());
                 }
             }
 
@@ -172,12 +169,12 @@ function _SharedFilesUtils() {
         }
 
         var headers = ['name', 'isTrashed', 'size', 'url', 'ID', 'sharingPermission', 'sharingAccess', 'owner', 'viewers', 'editors', 'folder'];
-        headers.splice(0,0,'date/time', 'subject', 'index');
+        headers.splice(0,0,'date/time', 'action', 'status', 'index');
         sheet.getRange(getColumnLetterRange(headers, 1 /* row 1 */)).setValues([headers]);
 
     }
 
-    function recordToLog(subject, index, itemToLog) {
+    function recordToLog(action, status, index, itemToLog) {
         if (!LOG_SHEET) {
             return;
         }
@@ -192,7 +189,7 @@ function _SharedFilesUtils() {
         } else {
             logLine = Array.prototype.constructor.apply(null, itemToLog);
         }
-        logLine.splice(0,0, RUNTIME, subject, (typeof index == 'undefined' ? '' : index));
+        logLine.splice(0,0, RUNTIME, action, status, (typeof index == 'undefined' ? '' : index));
 
         sheet.getRange(getColumnLetterRange(logLine, 2 /* row 2 */)).setValues([logLine]);
 
