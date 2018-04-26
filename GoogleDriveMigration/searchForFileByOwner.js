@@ -1,4 +1,4 @@
-function findFiles() {
+function FIND_FILES_OWNED_OR_EDITED_BY_BOBBY() {
     new _SharedFilesUtils().findSharedFiles();
 }
 function _SharedFilesUtils() {
@@ -198,6 +198,8 @@ function _SharedFilesUtils() {
         headers.splice(0,0,'date/time', 'action', 'status', 'index');
         sheet.getRange(getColumnLetterRange(headers, 1 /* row 1 */)).setValues([headers]);
 
+        // set the date column date-time format:
+        sheet.getRange('A:A').setNumberFormat('mmm d,  h:mm:ss am/pm');
     }
 
     function recordToLog(action, status, index, itemToLog, isInLoop) {
