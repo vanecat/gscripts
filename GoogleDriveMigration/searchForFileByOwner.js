@@ -1,11 +1,17 @@
 function FIND_FILES_OWNED_OR_EDITED_BY_BOBBY() {
     new _SharedFilesUtils().findSharedFiles();
 }
+
+function CHANGE_FOLDER_CONTENTS_OWNER_RECURSIVELY() {
+    new _SharedFilesUtils().getFoldersAndFilesIterative();
+}
 function _SharedFilesUtils() {
-    var LOG_SHEET, RUNTIME = new Date(),
+    var LOG_SHEET, RUNTIME = new Date(), COPY_DIR,
         STATUS_COMPLETE = 'COMPLETE',
         STATUS_IN_PROGRESS = 'IN_PROGRESS';
 
+
+    COPY_DIR = getScriptProperties().SHARED_FILES_COPY_DIR;
 
     var findSharedFiles = function() {
         var actionName = 'find_files_owned';
@@ -53,9 +59,10 @@ function _SharedFilesUtils() {
                 }
             } catch(e) {}
 
-            if (ownerEmail == ownerEmailToSearchFor || !!editorsEmails[ownerEmail]) {
+            // CONDITIONAL:
+            //if (ownerEmail == ownerEmailToSearchFor || !!editorsEmails[ownerEmail]) {
                 logFileInfo(f, i, actionName, true /* is in loop */);
-            }
+            //}
 
 
         }
@@ -94,6 +101,11 @@ function _SharedFilesUtils() {
         var fid = 'not enough permissions for id';
         try {
             fid = f.getId();
+        } catch (e) {}
+
+        var downloadUrl = 'not enough permissions for download URL';
+        try {
+            downloadUrl = f.getDownloadUrl();
         } catch (e) {}
 
         var sharingPermission = 'not enough permissions for sharing permission';
@@ -141,7 +153,7 @@ function _SharedFilesUtils() {
             }
         } catch(e) {}
 
-        recordToLog(actionName, null, fileIndex, [name, isTrashed, size, url, fid, sharingPermission, sharingAccess, ownerEmail, viewersString, editorsString, parentsString ], isInLoop);
+        recordToLog(actionName, null, fileIndex, [name, isTrashed, size, url, fid, downloadUrl, sharingPermission, sharingAccess, ownerEmail, viewersString, editorsString, parentsString ], isInLoop);
     }
 
 
@@ -194,7 +206,7 @@ function _SharedFilesUtils() {
             LOG_SHEET = sheet;
         }
 
-        var headers = ['name', 'isTrashed', 'size', 'url', 'ID', 'sharingPermission', 'sharingAccess', 'owner', 'viewers', 'editors', 'folder'];
+        var headers = ['name', 'isTrashed', 'size', 'url', 'ID', 'downloadURL', 'sharingPermission', 'sharingAccess', 'owner', 'viewers', 'editors', 'folder'];
         headers.splice(0,0,'date/time', 'action', 'status', 'index');
         sheet.getRange(getColumnLetterRange(headers, 1 /* row 1 */)).setValues([headers]);
 
@@ -294,5 +306,130 @@ function _SharedFilesUtils() {
         return String.fromCharCode("A".charCodeAt(0) + i - 1); // substract one so that column 1 = A (because i is 1-based)
     }
 
+
+
+    function createParentFolders(path, root) {
+        if (!path || path == '?') {
+            return {status: false, message: 'folder name is empty'};
+        }
+        var foldersNames = path.split('\\');
+        var currentFolder = root;
+
+        for(var i=0; i<foldersNames.length; i++) {
+            var folderName = foldersNames[i];
+            if (!folderName) {
+                continue;
+            }
+            var foldersFound = currentFolder.getFoldersByName(folderName);
+            if (!!foldersFound && foldersFound.hasNext()) {
+                currentFolder = foldersFound.next();
+                continue;
+            } else {
+                try {
+                    currentFolder = currentFolder.createFolder(folderName);
+                } catch(e) {
+                    var errorMessage = 'tmp parent folder ('+folderName+') cannot be created: '+e.message;
+                    logError(errorMessage);
+                    return { status : false, message: errorMessage };
+                }
+
+            }
+        }
+        return {status: true, folder: currentFolder};
+
+    }
+    function copyFile(fileId, destinationPath) {
+
+        var folderStatus = createParentFolders(destinationPath, COPY_DIR);
+        if (!folderStatus.status) {
+            return folderStatus;
+        }
+
+        var f1;
+        try {
+            var folder = folderStatus.folder;
+            var fExistingIter = folder.getFilesByName(f.getName());
+            if (!fExistingIter.hasNext()) {
+                f1 = f.makeCopy(f.getName(), folder);
+
+                //setFilePermissions(f, f1);
+                return { message: 'copied' + (status.length ? ': ' + status.join('; ') : ''), status: true, fileId: f1.getId(), file: f1 };
+            } else {
+                var fExisting = fExistingIter.next();
+                return { message: 'already copied' + (status.length ? ': ' + status.join('; ') : ''), status: true, fileId: fExisting.getId(), file: fExisting };
+            }
+        } catch (e) {
+            return { message: 'file not copied: '+e.message, status: false };
+        }
+    }
+
+
+    var ii = 0;
+    function getFoldersAndFilesIterative(opt_folder) {
+
+        var folder;
+
+        if (!opt_folder) {
+            initLogSpreadsheet();
+            var folderId = getScriptProperties().SHARED_FOLDER_TO_CHANGE_OWNER;
+
+            if (!folderId) {
+                throw Error('no folder ID in script properties to change owner for');
+            }
+
+            folder = DriveApp.getFolderById(getFolderIdFromURL(folderId));
+        } else {
+            folder = opt_folder;
+        }
+
+
+        if (!folder) {
+            throw Error('no such folder change owner for: ' + folderId);
+        }
+
+        var actionName = 'owner-change';
+        var newOwner = 'antikabgblog@gmail.com';
+
+        if (!folder) {
+            throw Error("folder to iterate on is bad");
+        }
+
+        ii++;
+        var changeOwnerStatus = 'done';
+        // change owner
+        try {
+            folder.setOwner(newOwner);
+        } catch(e) {
+            changeOwnerStatus = 'X';
+        }
+        recordToLog(actionName, changeOwnerStatus, ii, folder.getName());
+
+
+        var childFiles = folder.getFiles();
+        if (!!childFiles && childFiles.hasNext()) {
+            while (childFiles.hasNext()) {
+                ii++;
+                var f = childFiles.next();
+
+                changeOwnerStatus = 'done';
+                // change owner
+                try {
+                    f.setOwner(newOwner);
+                } catch(e) {
+                    changeOwnerStatus = 'X';
+                }
+                recordToLog(actionName, changeOwnerStatus, ii, f.getName());
+            }
+        }
+
+        var folders = folder.getFolders();
+        while (folders.hasNext()) {
+            var f2 = folders.next();
+            if (!!f) {
+                getFoldersAndFilesIterative(f2);
+            }
+        }
+    }
+    this.getFoldersAndFilesIterative = getFoldersAndFilesIterative;
 
 }
